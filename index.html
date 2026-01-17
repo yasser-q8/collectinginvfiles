@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الجرد اليومي - شركة نايف للأغذية</title>
+    <link rel="icon" href="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" type="image/jpeg">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-red: #c53030;
+            --light-red: #fff5f5;
+            --dark-red: #742a2a;
+            --success-color: #38a169;
+            --warning-color: #ed8936;
+            --danger-color: #c53030;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f7fafc;
+            color: #333;
+            line-height: 1.5;
+            padding: 15px;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg');
+            background-size: 400px;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.05;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 2000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--dark-red), var(--primary-red));
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid white;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            background: white;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .title-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .date-display {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .controls {
+            padding: 15px 20px;
+            background-color: var(--light-red);
+            border-bottom: 1px solid #fed7d7;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+            flex: 1;
+        }
+
+        .control-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--dark-red);
+            font-size: 13px;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .control-input, .search-input, .search-suggestions {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #cbd5e0;
+            font-size: 14px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .search-input {
+            padding-right: 35px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-red);
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #cbd5e0;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            text-align: right;
+        }
+
+        .search-suggestion:hover {
+            background-color: var(--light-red);
+        }
+
+        .search-suggestion:last-child {
+            border-bottom: none;
+        }
+
+        .control-button {
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 15px;
+            min-width: 140px;
+            transition: all 0.2s;
+            font-size: 14px;
+            border-radius: 5px;
+        }
+
+        .control-button:hover {
+            background: linear-gradient(135deg, var(--dark-red), var(--primary-red));
+            transform: translateY(-1px);
+        }
+
+        .control-button:active {
+            transform: translateY(0);
+        }
+
+        .control-button.warning {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+        }
+
+        .control-button.warning:hover {
+            background: linear-gradient(135deg, #dd6b20, #ed8936);
+        }
+
+        .control-button.danger {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+        }
+
+        .control-button.danger:hover {
+            background: linear-gradient(135deg, #c53030, #e53e3e);
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+
+        .main-content {
+            padding: 15px;
+            overflow-x: auto;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 1700px;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            color: white;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #fed7d7;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 8px 6px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            transition: background-color 0.2s;
+            font-size: 13px;
+        }
+
+        .data-table td.item-name {
+            text-align: right;
+            padding-right: 15px;
+            direction: rtl;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .data-table tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .data-table .positive {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .data-table .negative {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        .data-table .deduction {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        .data-table .zero {
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .data-table .grouped-difference {
+            font-size: 15px;
+            font-weight: bold;
+            padding: 10px 6px;
+            background-color: #f8f9fa;
+            border-left: 3px solid var(--primary-red);
+            border-right: 3px solid var(--primary-red);
+        }
+
+        .data-table .grouped-difference.positive {
+            color: var(--success-color);
+            background-color: #f0fff4;
+        }
+
+        .data-table .grouped-difference.negative {
+            color: var(--danger-color);
+            background-color: #fff5f5;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: #666;
+            font-size: 13px;
+            border-top: 1px solid #e2e8f0;
+            background-color: #f8f9fa;
+        }
+
+        /* PDF Template */
+        .pdf-template {
+            position: fixed;
+            left: -10000px;
+            top: -10000px;
+            width: 1123px;
+            height: 794px;
+            background: white;
+            padding: 10px;
+            box-sizing: border-box;
+            z-index: -1000;
+            font-size: 12px;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .file-input-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+            }
+            
+            .controls {
+                padding: 12px;
+            }
+            
+            .control-group {
+                width: 100%;
+            }
+            
+            .buttons-container {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" alt="شعار نايف للأغذية">
+                </div>
+                <div class="title-section">
+                    <h1 class="title">شركة نايف للأغذية</h1>
+                    <p class="subtitle">نظام الجرد اليومي للمطاعم</p>
+                </div>
+            </div>
+            <div class="date-display" id="current-date"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">بحث عن المطعم:</label>
+                <div class="search-container">
+                    <input type="text" class="search-input" id="restaurant-search" placeholder="اكتب اسم المطعم...">
+                    <div class="search-icon">🔍</div>
+                    <div class="search-suggestions" id="restaurant-suggestions"></div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">تاريخ الجرد:</label>
+                <input type="date" class="control-input" id="inventory-date" value="2026-01-08">
+            </div>
+            
+            <div class="buttons-container">
+                <div class="file-input-container">
+                    <input type="file" class="file-input" id="excel-file" accept=".xlsx,.xls,.xlsm">
+                    <label class="file-input-label" for="excel-file">
+                        <span>📂</span>
+                        تحميل من Excel
+                    </label>
+                </div>
+                <button class="control-button" id="export-pdf">
+                    <span>📄</span>
+                    تصدير PDF
+                </button>
+                <button class="control-button danger" id="clear-data">
+                    <span>🗑️</span>
+                    مسح البيانات
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="table-container">
+                <table class="data-table" id="inventory-table">
+                    <thead>
+                        <tr>
+                            <th width="6%">الكود</th>
+                            <th width="15%">الصنف الأساسي</th>
+                            <th width="6%">رصيد أول</th>
+                            <th width="6%">الوحدة</th>
+                            <th width="6%">استلام</th>
+                            <th width="8%">التحويلات الداخلة</th>
+                            <th width="8%">التحويلات الخارجة</th>
+                            <th width="6%">التوالف</th>
+                            <th width="6%">المبيعات</th>
+                            <th width="8%">المتبقي إقفال</th>
+                            <th width="8%">الجرد الفعلي</th>
+                            <th width="6%">الفرق</th>
+                            <th width="9%">تجميع الفروقات</th>
+                            <th width="8%">رصيد آخر</th>
+                            <th width="9%">الفرق بين البرنامج والمتبقي</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- سيتم ملء البيانات من JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2026 نظام الجرد اليومي - شركة نايف للأغذية</p>
+        </div>
+    </div>
+
+    <!-- PDF Template -->
+    <div id="pdf-template" class="pdf-template">
+        <div class="pdf-header" style="padding: 5px; margin-bottom: 5px;">
+            <div class="pdf-header-row" style="text-align: center;">
+                <div style="text-align: center; margin-bottom: 5px;">
+                    <img src="https://i.postimg.cc/NM2zJWZD/NAIF-LOGO.jpg" alt="شعار الشركة" 
+                         style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #c53030; margin: 0 auto 3px; display: block;">
+                    <h2 style="color: #c53030; margin: 0; font-size: 16px;">
+                        شركة نايف للأغذية
+                    </h2>
+                </div>
+                <h3 style="color: #c53030; margin: 0 0 5px 0; font-size: 14px;">تقرير الجرد اليومي</h3>
+                <div style="margin-bottom: 5px; text-align: center; font-size: 12px;">
+                    <div style="display: inline-block;">
+                        المطعم: <span id="pdf-restaurant-name"></span>
+                    </div>
+                    <div style="display: inline-block; width: 1cm;"></div>
+                    <div style="display: inline-block;">
+                        تاريخ الجرد: <span id="pdf-inventory-date"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <table class="statement-table" id="pdf-statement-table" style="font-size: 10px; border-collapse: collapse; width: 100%;">
+            <thead>
+                <tr>
+                    <th width="6%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">الكود</th>
+                    <th width="15%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">الصنف</th>
+                    <th width="6%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">رصيد أول</th>
+                    <th width="6%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">الوحدة</th>
+                    <th width="6%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">استلام</th>
+                    <th width="8%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">تحويل داخلة</th>
+                    <th width="8%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">تحويل خارجة</th>
+                    <th width="6%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">توالف</th>
+                    <th width="6%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">مبيعات</th>
+                    <th width="8%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">متبقي إقفال</th>
+                    <th width="8%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">جرد فعلي</th>
+                    <th width="6%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">الفرق</th>
+                    <th width="9%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">تجميع الفروقات</th>
+                    <th width="9%" style="padding: 4px; border: 1px solid #000; text-align: center; background: #c53030; color: white;">فرق البرنامج</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-table-body" style="font-size: 9px;">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // بيانات المطاعم - محدثة لتشمل جميع المطاعم من الملف المرفق
+        const restaurants = [
+            "الفروانية",
+            "الافينيوز", 
+            "الجابرية بنت الديك",
+            "الجابرية تكا و فرايد",
+            "الجهراء الزويخ",
+            "الجهراء الصناعية",
+            "الجهراء ليالي الشرق",
+            "الجهراء مجمع مكة",
+            "الخيران أوتليت مول",
+            "الخيران أويا مول",
+            "الخيول",
+            "الدسمة وبنيد القار",
+            "الرحاب",
+            "الرقة",
+            "الرقعي",
+            "الري",
+            "السندباد",
+            "السيد ياسين",
+            "الشرق",
+            "الشهداء",
+            "الشويخ واره",
+            "الصليبية الصناعية",
+            "الضباعية",
+            "العارضية الجديد",
+            "الفحاحيل",
+            "الفروانية فرع 2",
+            "الفنطاس",
+            "الفيحاء",
+            "القادسية",
+            "المطار",
+            "المنقف",
+            "النافورة",
+            "الوفرة",
+            "أبو حليفة",
+            "أسواق القرين",
+            "جمعية الزهراء",
+            "جمعية الصليبية",
+            "جمعية العدان والقصور",
+            "جمعية القيروان",
+            "جمعية أبوفطيرة",
+            "جمعية صباح الاحمد",
+            "جمعية مدينة جابر الأحمد",
+            "حولي بارك",
+            "خيطان العصيمي",
+            "سعد العبدالله",
+            "سلوى",
+            "سوق الجليب",
+            "شارع البحرين",
+            "شرق الاحمدي",
+            "صباح السالم",
+            "صباح السالم (العرين)",
+            "غرب أبو فطيرة",
+            "كبد",
+            "مارينا مول",
+            "مجمع الكوت",
+            "مشرف",
+            "مول 360",
+            "نادي الصليبخات",
+            "هدية",
+            "الخيران",
+            "الخيران أوتليت",
+            "الخيران أويا"
+        ];
+
+        // هيكل الأصناف الأساسية بنفس ترتيب ملف Collecting
+        let inventoryData = [];
+
+        // مجموعات تجميع الفروقات المحددة
+        const groupedItems = {
+            'K1035': ['K1035', 'K1036'],  // Chicken Big Fillet مع Spicy
+            'K1036': ['K1035', 'K1036'],
+            'K1008': ['K1008', 'K1009'],  // Chicken Fillet عادي مع فلفل
+            'K1009': ['K1008', 'K1009'],
+            'K1015': ['K1015', 'K1016'],  // Chicken Finger Fillet مع Spicy
+            'K1016': ['K1015', 'K1016'],
+            'K1012': ['K1012', 'K1013'],  // Chicken Fried عادي مع فلفل
+            'K1013': ['K1012', 'K1013'],
+            'K1039': ['K1039', 'K1040'],  // Drumstick whole Fried عادي مع فلفل
+            'K1040': ['K1039', 'K1040']
+        };
+
+        // عناصر DOM
+        const restaurantSearch = document.getElementById('restaurant-search');
+        const restaurantSuggestions = document.getElementById('restaurant-suggestions');
+        const inventoryDate = document.getElementById('inventory-date');
+        const exportPdfBtn = document.getElementById('export-pdf');
+        const clearDataBtn = document.getElementById('clear-data');
+        const excelFileInput = document.getElementById('excel-file');
+        const tableBody = document.getElementById('table-body');
+        const currentDateEl = document.getElementById('current-date');
+
+        // دالة تقريب الأرقام إلى أقرب رقم عشري واحد
+        function roundToDecimal(num) {
+            if (num === 0 || num === 0.0 || num === '0') return 0;
+            // تقريب إلى أقرب رقم عشري واحد
+            return Math.round(num * 10) / 10;
+        }
+
+        // دالة تحويل الجرام إلى كيلو (قسمة على 1000)
+        function convertGramToKilo(value) {
+            if (value === 0 || value === 0.0 || value === '0') return 0;
+            return value / 1000;
+        }
+
+        // تهيئة التاريخ الحالي بالأرقام الإنجليزية
+        function initializeDate() {
+            const today = new Date();
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            
+            const dayName = days[today.getDay()];
+            const day = today.getDate();
+            const month = months[today.getMonth()];
+            const year = today.getFullYear();
+            
+            currentDateEl.textContent = `${dayName}، ${day} ${month} ${year}`;
+            
+            // تعيين تاريخ اليوم كتاريخ افتراضي للجرد
+            const todayStr = today.toISOString().split('T')[0];
+            inventoryDate.value = todayStr;
+        }
+
+        // تهيئة قائمة البحث عن المطاعم
+        function initializeRestaurantSearch() {
+            restaurantSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                restaurantSuggestions.innerHTML = '';
+                
+                if (searchTerm.length === 0) {
+                    restaurantSuggestions.style.display = 'none';
+                    return;
+                }
+                
+                const filteredRestaurants = restaurants.filter(restaurant => 
+                    restaurant.toLowerCase().includes(searchTerm)
+                );
+                
+                if (filteredRestaurants.length > 0) {
+                    filteredRestaurants.forEach(restaurant => {
+                        const suggestion = document.createElement('div');
+                        suggestion.className = 'search-suggestion';
+                        suggestion.textContent = restaurant;
+                        suggestion.addEventListener('click', function() {
+                            restaurantSearch.value = restaurant;
+                            restaurantSuggestions.style.display = 'none';
+                        });
+                        restaurantSuggestions.appendChild(suggestion);
+                    });
+                    restaurantSuggestions.style.display = 'block';
+                } else {
+                    restaurantSuggestions.style.display = 'none';
+                }
+            });
+            
+            // إغلاق القائمة عند النقر خارجها
+            document.addEventListener('click', function(event) {
+                if (!restaurantSearch.contains(event.target) && !restaurantSuggestions.contains(event.target)) {
+                    restaurantSuggestions.style.display = 'none';
+                }
+            });
+            
+            // إغلاق القائمة عند الضغط على Esc
+            restaurantSearch.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    restaurantSuggestions.style.display = 'none';
+                }
+            });
+        }
+
+        // دالة لتنسيق الأرقام (إظهار - للصفر)
+        function formatNumber(num) {
+            if (num === 0 || num === 0.0 || num === '0') {
+                return '<span class="zero">-</span>';
+            }
+            // تقريب الرقم ثم عرضه
+            const rounded = roundToDecimal(num);
+            return rounded;
+        }
+
+        // حساب تجميع الفروقات للأصناف المحددة فقط
+        function calculateGroupedDifferences(items) {
+            const groupedData = {};
+            
+            // تهيئة مجموعات الأصناف المحددة
+            Object.keys(groupedItems).forEach(key => {
+                const group = groupedItems[key];
+                const groupKey = group.sort().join('-');
+                if (!groupedData[groupKey]) {
+                    groupedData[groupKey] = {
+                        totalDifference: 0,
+                        items: [],
+                        codes: group,
+                        groupName: groupKey
+                    };
+                }
+            });
+            
+            items.forEach(item => {
+                const code = item.code;
+                
+                // البحث إذا كان هذا الصنف ينتمي لمجموعة محددة
+                let groupKey = null;
+                if (groupedItems[code]) {
+                    const group = groupedItems[code];
+                    groupKey = group.sort().join('-');
+                }
+                
+                const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
+                const difference = item.actual - closingBalance;
+                
+                if (groupKey && groupedData[groupKey]) {
+                    // إذا كان الصنف ينتمي لمجموعة محددة، نجمعه مع مجموعته
+                    groupedData[groupKey].totalDifference += difference;
+                    groupedData[groupKey].items.push(item);
+                } else {
+                    // إذا كان الصنف فردي، ننشئ مجموعة فردية له
+                    const individualKey = code;
+                    if (!groupedData[individualKey]) {
+                        groupedData[individualKey] = {
+                            totalDifference: difference,
+                            items: [item],
+                            codes: [code],
+                            groupName: code
+                        };
+                    }
+                }
+            });
+            
+            return groupedData;
+        }
+
+        // تحميل وعرض بيانات الجرد ***************************************************************
+// تحميل وعرض بيانات الجرد
+function loadInventoryData() {
+    const selectedRestaurant = restaurantSearch.value;
+    const selectedDate = inventoryDate.value;
+    
+    if (!selectedRestaurant) {
+        alert('يرجى اختيار المطعم أولاً');
+        return;
+    }
+    
+    if (inventoryData.length === 0) {
+        alert('لا توجد بيانات لعرضها. يرجى تحميل بيانات من ملف Excel أولاً.');
+        return;
+    }
+    
+    // مسح الجدول الحالي
+    tableBody.innerHTML = '';
+    
+    // حساب التجميعات للأصناف المحددة
+    const groupedDifferences = calculateGroupedDifferences(inventoryData);
+    
+    // إنشاء خريطة لتتبع الصفوف المدمجة
+    const rowGroups = new Map();
+    const processedCodes = new Set(); // لتجنب معالجة نفس الكود مرتين
+    
+    // المرحلة الأولى: تجميع البيانات حسب المجموعات
+    inventoryData.forEach((item) => {
+        const code = item.code;
+        
+        // إذا تمت معالجة هذا الكود مسبقاً، نتخطاه
+        if (processedCodes.has(code)) return;
+        
+        let groupKey = null;
+        
+        // التحقق مما إذا كان هذا الكود ينتمي إلى مجموعة محددة
+        if (groupedItems[code]) {
+            const group = groupedItems[code];
+            
+            // التحقق من وجود جميع الأصناف في المجموعة في البيانات الحالية
+            const existingGroupItems = group.filter(groupCode => 
+                inventoryData.some(dataItem => dataItem.code === groupCode)
+            );
+            
+            if (existingGroupItems.length > 1) {
+                // إذا كان هناك أكثر من صنف موجود، ننشئ مجموعة
+                groupKey = existingGroupItems.sort().join('-');
+                
+                // تجميع الأصناف في هذه المجموعة
+                const groupItems = existingGroupItems.map(groupCode => 
+                    inventoryData.find(dataItem => dataItem.code === groupCode)
+                ).filter(item => item); // إزالة أي عناصر undefined
+                
+                if (groupItems.length > 1) {
+                    rowGroups.set(groupKey, groupItems);
+                    
+                    // وضع علامة على جميع الأكواد في المجموعة كمعالجة
+                    existingGroupItems.forEach(groupCode => {
+                        processedCodes.add(groupCode);
+                    });
+                } else {
+                    // إذا كان هناك صنف واحد فقط، نعامله كفردي
+                    groupKey = code;
+                    rowGroups.set(groupKey, [item]);
+                    processedCodes.add(code);
+                }
+            } else {
+                // إذا كان هناك صنف واحد فقط، نعامله كفردي
+                groupKey = code;
+                rowGroups.set(groupKey, [item]);
+                processedCodes.add(code);
+            }
+        } else {
+            // صنف فردي
+            groupKey = code;
+            rowGroups.set(groupKey, [item]);
+            processedCodes.add(code);
+        }
+    });
+    
+    // المرحلة الثانية: إنشاء الصفوف
+    rowGroups.forEach((groupItems, groupKey) => {
+        const isGrouped = groupKey.includes('-') && groupItems.length > 1;
+        
+        // حساب الفرق المجمع للمجموعة
+        let groupTotalDifference = 0;
+        if (isGrouped) {
+            groupItems.forEach(item => {
+                const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
+                const difference = item.actual - closingBalance;
+                groupTotalDifference += difference;
+            });
+        }
+        
+        const roundedGroupDiff = roundToDecimal(groupTotalDifference);
+        const groupDiffClass = roundedGroupDiff > 0 ? 'positive' : (roundedGroupDiff < 0 ? 'negative' : 'zero');
+        
+        // إنشاء صفوف المجموعة
+        groupItems.forEach((item, itemIndex) => {
+            const row = document.createElement('tr');
+            
+            // حساب القيم
+            const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
+            const difference = item.actual - closingBalance;
+            const finalBalance = item.endQty || item.actual;
+            const programDifference = finalBalance - closingBalance;
+            
+            // تحويل القيم بالجرام إلى كيلو (إذا كانت الوحدة جرام)
+            let displayOpening = item.opening;
+            let displayReceived = item.received;
+            let displayTransferIn = item.transferIn;
+            let displayTransferOut = item.transferOut;
+            let displayWastage = item.wastage;
+            let displaySales = item.sales;
+            let displayClosingBalance = closingBalance;
+            let displayActual = item.actual;
+            let displayFinalBalance = finalBalance;
+            
+            // إذا كانت الوحدة جرام، نقسم على 1000 لتحويل إلى كيلو
+            if (item.unit === 'gram') {
+                displayOpening = convertGramToKilo(item.opening);
+                displayReceived = convertGramToKilo(item.received);
+                displayTransferIn = convertGramToKilo(item.transferIn);
+                displayTransferOut = convertGramToKilo(item.transferOut);
+                displayWastage = convertGramToKilo(item.wastage);
+                displaySales = convertGramToKilo(item.sales);
+                displayClosingBalance = convertGramToKilo(closingBalance);
+                displayActual = convertGramToKilo(item.actual);
+                displayFinalBalance = convertGramToKilo(finalBalance);
+            }
+            
+            // تقريب جميع الأرقام
+            const roundedOpening = roundToDecimal(displayOpening);
+            const roundedReceived = roundToDecimal(displayReceived);
+            const roundedTransferIn = roundToDecimal(displayTransferIn);
+            const roundedTransferOut = roundToDecimal(displayTransferOut);
+            const roundedWastage = roundToDecimal(displayWastage);
+            const roundedSales = roundToDecimal(displaySales);
+            const roundedClosingBalance = roundToDecimal(displayClosingBalance);
+            const roundedActual = roundToDecimal(displayActual);
+            const roundedDifference = roundToDecimal(difference);
+            const roundedFinalBalance = roundToDecimal(displayFinalBalance);
+            const roundedProgramDifference = roundToDecimal(programDifference);
+            
+            // تحديد فئة الأرقام
+            const openingClass = roundedOpening > 0 ? '' : 'zero';
+            const receivedClass = roundedReceived > 0 ? '' : 'zero';
+            const transferInClass = roundedTransferIn > 0 ? '' : 'zero';
+            const transferOutClass = roundedTransferOut > 0 ? 'deduction' : 'zero';
+            const wastageClass = roundedWastage > 0 ? 'deduction' : 'zero';
+            const salesClass = roundedSales > 0 ? 'deduction' : 'zero';
+            const closingClass = roundedClosingBalance > 0 ? '' : 'zero';
+            const actualClass = roundedActual > 0 ? '' : 'zero';
+            const endQtyClass = roundedFinalBalance > 0 ? '' : 'zero';
+            const diffClass = roundedDifference > 0 ? 'positive' : (roundedDifference < 0 ? 'negative' : 'zero');
+            const programDiffClass = roundedProgramDifference > 0 ? 'positive' : (roundedProgramDifference < 0 ? 'negative' : 'zero');
+            
+            // بناء HTML للصف - العمود 1-12
+            let rowHtml = `
+                <td><strong>${item.code}</strong></td>
+                <td class="item-name">${item.name}</td>
+                <td class="${openingClass}">${formatNumber(roundedOpening)}</td>
+                <td>${item.unit === 'gram' ? 'kilo' : item.unit}</td>
+                <td class="${receivedClass}">${formatNumber(roundedReceived)}</td>
+                <td class="${transferInClass}">${formatNumber(roundedTransferIn)}</td>
+                <td class="${transferOutClass}">${formatNumber(roundedTransferOut)}</td>
+                <td class="${wastageClass}">${formatNumber(roundedWastage)}</td>
+                <td class="${salesClass}">${formatNumber(roundedSales)}</td>
+                <td class="${closingClass}">${formatNumber(roundedClosingBalance)}</td>
+                <td class="${actualClass}">${formatNumber(roundedActual)}</td>
+                <td class="${diffClass}">${roundedDifference > 0 ? '+' : ''}${formatNumber(roundedDifference)}</td>
+            `;
+            
+            // إضافة خلية تجميع الفروقات (العمود 13)
+            if (itemIndex === 0) {
+                if (isGrouped) {
+                    // أول صف في المجموعة المدمجة - نستخدم rowspan
+                    rowHtml += `
+                        <td class="grouped-difference ${groupDiffClass}" rowspan="${groupItems.length}">
+                            ${roundedGroupDiff > 0 ? '+' : ''}${roundedGroupDiff !== 0 ? roundedGroupDiff : '-'}
+                        </td>
+                    `;
+                } else {
+                    // صنف فردي
+                    const individualDiff = roundedDifference;
+                    const individualDiffClass = individualDiff > 0 ? 'positive' : (individualDiff < 0 ? 'negative' : 'zero');
+                    rowHtml += `
+                        <td class="grouped-difference ${individualDiffClass}">
+                            ${individualDiff > 0 ? '+' : ''}${individualDiff !== 0 ? individualDiff : '-'}
+                        </td>
+                    `;
+                }
+            } else {
+                // صفوف لاحقة في المجموعة المدمجة - لا نضيف شيئاً لأن الخلية مغطاة بواسطة rowspan
+                // لا نضيف <td> هنا!
+            }
+            
+            // إضافة العمودين الأخيرين (14 و 15)
+            rowHtml += `
+                <td class="${endQtyClass}">${formatNumber(roundedFinalBalance)}</td>
+                <td class="${programDiffClass}">${roundedProgramDifference > 0 ? '+' : ''}${formatNumber(roundedProgramDifference)}</td>
+            `;
+            
+            row.innerHTML = rowHtml;
+            tableBody.appendChild(row);
+        });
+    });
+}
+        // قراءة ملف Excel وتحليل البيانات ***************************************************************
+        function handleExcelFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // أولاً: قراءة الأصناف الأساسية من شيت الجرد الفعلي
+                    const baseItems = readBaseItemsFromActualInventory(workbook);
+                    
+                    // ثانياً: جمع البيانات من جميع الشيتات للأصناف الأساسية فقط
+                    const parsedData = parseAllSheetsForBaseItems(workbook, baseItems);
+                    
+                    if (parsedData.length > 0) {
+                        inventoryData = parsedData;
+                        loadInventoryData();
+                        // تم إزالة رسالة التنبيه كما طلبت
+                    } else {
+                        alert('لم يتم العثور على بيانات في ملف Excel. يرجى التحقق من تنسيق الملف.');
+                    }
+                } catch (error) {
+                    console.error('Error reading Excel file:', error);
+                    alert('حدث خطأ في قراءة ملف Excel. يرجى التأكد من تنسيق الملف.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // قراءة الأصناف الأساسية من شيت الجرد الفعلي
+        function readBaseItemsFromActualInventory(workbook) {
+            const baseItems = [];
+            
+            // البحث عن شيت الجرد الفعلي
+            const sheetNames = workbook.SheetNames;
+            let actualSheetName = '';
+            
+            for (const name of sheetNames) {
+                if (name.includes('فعلي') || name.includes('الجرد الفعلي') || name.includes('الفعلي')) {
+                    actualSheetName = name;
+                    break;
+                }
+            }
+            
+            if (!actualSheetName) {
+                actualSheetName = sheetNames.find(name => name.includes('جرد')) || sheetNames[0];
+            }
+            
+            const worksheet = workbook.Sheets[actualSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            
+            // البحث عن صف العناوين
+            let headerRowIndex = -1;
+            for (let i = 0; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (row && row.length >= 2) {
+                    if (row[0] && (row[0].toString().includes('الكود') || row[0].toString().includes('Code'))) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (headerRowIndex === -1) headerRowIndex = 0;
+            
+            // قراءة الأصناف الأساسية
+            for (let i = headerRowIndex + 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (row && row.length >= 4) {
+                    const code = String(row[0] || '').trim();
+                    const name = String(row[1] || '').trim();
+                    
+                    if (code && (code.startsWith('K') || code.startsWith('A') || code.startsWith('L'))) {
+                        // تحديد الوحدة الخاصة للصنف K1070
+                        let unit = determineUnitFromRow(row);
+                        if (code === 'K1070') {
+                            unit = 'kilo'; // Fresh Burger Chickens يجب أن تكون بالكيلو
+                        }
+                        
+                        baseItems.push({
+                            code: code,
+                            name: name,
+                            unit: unit
+                        });
+                    }
+                }
+            }
+            
+            return baseItems;
+        }
+
+        // تحديد الوحدة من الصف
+        function determineUnitFromRow(row) {
+            if (row.length >= 3) {
+                const unitText = String(row[2] || '').toLowerCase();
+                return determineUnit(unitText);
+            }
+            return 'pc';
+        }
+
+        // جمع البيانات من جميع الشيتات للأصناف الأساسية فقط
+        function parseAllSheetsForBaseItems(workbook, baseItems) {
+            // إنشاء هيكل البيانات الأساسي
+            const parsedData = baseItems.map(item => ({
+                code: item.code,
+                name: item.name,
+                unit: item.unit,
+                opening: 0,
+                received: 0,
+                transferIn: 0,
+                transferOut: 0,
+                wastage: 0,
+                sales: 0,
+                actual: 0,
+                endQty: 0
+            }));
+            
+            // تحليل كل شيت
+            workbook.SheetNames.forEach(sheetName => {
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                
+                if (sheetName.includes('رصيد أول') || sheetName.includes('اول اليوم') || 
+                    sheetName.includes('Start Balance') || sheetName.includes('Start')) {
+                    parseOpeningBalanceForBaseItems(jsonData, parsedData);
+                } else if (sheetName.includes('رصيد آخر') || sheetName.includes('اخر اليوم') || 
+                          sheetName.includes('End Balance') || sheetName.includes('End')) {
+                    parseEndingBalanceForBaseItems(jsonData, parsedData);
+                } else if (sheetName.includes('استلام')) {
+                    parseReceiptsForBaseItems(jsonData, parsedData);
+                } else if (sheetName.includes('مبيعات')) {
+                    parseSalesForBaseItems(jsonData, parsedData);
+                } else if (sheetName.includes('فعلي') || sheetName.includes('الجرد الفعلي')) {
+                    parseActualInventoryForBaseItems(jsonData, parsedData);
+                } else if (sheetName.includes('توالف')) {
+                    parseWastageForBaseItems(jsonData, parsedData);
+                } else if (sheetName.includes('تحويل')) {
+                    parseTransfersForBaseItems(jsonData, parsedData, sheetName);
+                }
+            });
+            
+            return parsedData;
+        }
+
+        // تحويل الكمية من الوحدة الكبرى إلى الوحدة الصغرى
+        function convertToSmallestUnit(quantity, unitText, itemCode) {
+            if (!quantity || quantity === 0) return 0;
+            
+            // إذا كان الصنف K1070، لا نحول إلى جرام بل نبقيه بالكيلو
+            if (itemCode === 'K1070') {
+                return quantity; // نبقيه بالكيلو كما هو
+            }
+            
+            const unit = unitText.toLowerCase();
+            
+            // تحويل من باكيت إلى قطع
+            if (unit.includes('packet') || unit.includes('باكيت')) {
+                if (unit.includes('10')) return quantity * 10;
+                if (unit.includes('20')) return quantity * 20;
+                if (unit.includes('25')) return quantity * 25;
+                if (unit.includes('18')) return quantity * 18;
+                if (unit.includes('60')) return quantity * 60;
+                if (unit.includes('5')) return quantity * 5;
+                if (unit.includes('8')) return quantity * 8;
+                if (unit.includes('9')) return quantity * 9;
+                if (unit.includes('12')) return quantity * 12;
+                if (unit.includes('40')) return quantity * 40;
+                if (unit.includes('120')) return quantity * 120;
+                if (unit.includes('50')) return quantity * 50;
+            }
+            
+            // تحويل من كرتون إلى قطع
+            if (unit.includes('carton') || unit.includes('كرتون')) {
+                if (unit.includes('12')) return quantity * 12;
+                if (unit.includes('40')) return quantity * 40;
+            }
+            
+            // تحويل من كيلو إلى جرام (لكن ليس لـ K1070)
+            if (unit.includes('kilo') || unit.includes('كيلو') || unit.includes('kg')) {
+                return quantity * 1000;
+            }
+            
+            // تحويل من باكيت بالكيلو إلى جرام
+            if (unit.includes('packet') && unit.includes('kg')) {
+                const kgMatch = unit.match(/(\d+\.?\d*)\s*kg/i);
+                if (kgMatch) {
+                    const kgPerPacket = parseFloat(kgMatch[1]);
+                    return quantity * kgPerPacket * 1000;
+                }
+            }
+            
+            return quantity;
+        }
+
+        // تحديد الوحدة الصغرى
+        function determineUnit(unitText) {
+            const unit = unitText.toLowerCase();
+            
+            if (unit.includes('كيلو') || unit.includes('kilo') || unit.includes('kg')) {
+                return 'gram';
+            } else if (unit.includes('باكيت') || unit.includes('packet') || unit.includes('pkt')) {
+                return 'pc';
+            } else if (unit.includes('كرتون') || unit.includes('carton') || unit.includes('ctn')) {
+                return 'pc';
+            } else if (unit.includes('جرام') || unit.includes('gram') || unit.includes('gm')) {
+                return 'gram';
+            } else if (unit.includes('قطعة') || unit.includes('piece') || unit.includes('pc') || unit.includes('pcs')) {
+                return 'pc';
+            }
+            
+            return 'pc';
+        }
+
+        // تحليل شيت رصيد أول للأصناف الأساسية - من Start Balance وعمود Start Qty
+        function parseOpeningBalanceForBaseItems(data, parsedData) {
+            console.log("تحليل رصيد أول من Start Balance");
+            
+            // البحث عن صف العناوين
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 15) {
+                    // البحث عن أي عمود يحتوي على RM Code
+                    for (let j = 0; j < row.length; j++) {
+                        if (row[j] && row[j].toString().includes('RM Code')) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
+                    if (headerRowIndex !== -1) break;
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.log("لم يتم العثور على عناوين في Start Balance");
+                return;
+            }
+            
+            // تحديد مواقع الأعمدة
+            const headerRow = data[headerRowIndex];
+            let rmCodeCol = -1;
+            let startQtyCol = -1;
+            let vendorUOMCol = -1;
+            
+            for (let j = 0; j < headerRow.length; j++) {
+                const cell = headerRow[j];
+                if (cell) {
+                    const cellText = cell.toString().toLowerCase();
+                    if (cellText.includes('rm code')) {
+                        rmCodeCol = j;
+                    } else if (cellText.includes('start qty') || cellText.includes('رصيد أول')) {
+                        startQtyCol = j;
+                    } else if (cellText.includes('vendoruom') || cellText.includes('الوحدة')) {
+                        vendorUOMCol = j;
+                    }
+                }
+            }
+            
+            console.log("مواقع الأعمدة:", { rmCodeCol, startQtyCol, vendorUOMCol });
+            
+            // إذا لم نجد عمود Start Qty، نبحث في الأعمدة الشائعة
+            if (startQtyCol === -1) {
+                // في ملف Excel المرفق، Start Qty هو العمود 14 (P)
+                startQtyCol = 14;
+            }
+            
+            if (vendorUOMCol === -1) {
+                // VendorUOM هو العمود 7 (H)
+                vendorUOMCol = 7;
+            }
+            
+            // تحليل البيانات
+            let itemCount = 0;
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length > Math.max(rmCodeCol, startQtyCol)) {
+                    const code = String(row[rmCodeCol] || '').trim();
+                    const stockQty = parseFloat(row[startQtyCol]) || 0;
+                    const unitText = vendorUOMCol !== -1 && row[vendorUOMCol] ? 
+                        String(row[vendorUOMCol] || '').trim() : '';
+                    
+                    if (code && (code.startsWith('K') || code.startsWith('A') || code.startsWith('L'))) {
+                        const item = parsedData.find(item => item.code === code);
+                        if (item) {
+                            const convertedQty = convertToSmallestUnit(stockQty, unitText, code);
+                            item.opening = convertedQty;
+                            itemCount++;
+                            console.log(`رصيد أول: ${code} = ${stockQty} ${unitText} -> ${convertedQty} ${item.unit}`);
+                        }
+                    }
+                }
+            }
+            
+            console.log(`تم تحليل ${itemCount} صنف لرصيد أول`);
+        }
+
+        // تحليل شيت رصيد آخر للأصناف الأساسية - من End Balance وعمود Start Qty
+        function parseEndingBalanceForBaseItems(data, parsedData) {
+            console.log("تحليل رصيد آخر من End Balance");
+            
+            // البحث عن صف العناوين
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 15) {
+                    // البحث عن أي عمود يحتوي على RM Code
+                    for (let j = 0; j < row.length; j++) {
+                        if (row[j] && row[j].toString().includes('RM Code')) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
+                    if (headerRowIndex !== -1) break;
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.log("لم يتم العثور على عناوين في End Balance");
+                return;
+            }
+            
+            // تحديد مواقع الأعمدة
+            const headerRow = data[headerRowIndex];
+            let rmCodeCol = -1;
+            let startQtyCol = -1;
+            let vendorUOMCol = -1;
+            
+            for (let j = 0; j < headerRow.length; j++) {
+                const cell = headerRow[j];
+                if (cell) {
+                    const cellText = cell.toString().toLowerCase();
+                    if (cellText.includes('rm code')) {
+                        rmCodeCol = j;
+                    } else if (cellText.includes('start qty') || cellText.includes('رصيد أول')) {
+                        startQtyCol = j;
+                    } else if (cellText.includes('vendoruom') || cellText.includes('الوحدة')) {
+                        vendorUOMCol = j;
+                    }
+                }
+            }
+            
+            console.log("مواقع الأعمدة End Balance:", { rmCodeCol, startQtyCol, vendorUOMCol });
+            
+            // إذا لم نجد عمود Start Qty، نبحث في الأعمدة الشائعة
+            if (startQtyCol === -1) {
+                // في ملف Excel المرفق، Start Qty هو العمود 14 (P)
+                startQtyCol = 14;
+            }
+            
+            if (vendorUOMCol === -1) {
+                vendorUOMCol = 7;
+            }
+            
+            // تحليل البيانات
+            let itemCount = 0;
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length > Math.max(rmCodeCol, startQtyCol)) {
+                    const code = String(row[rmCodeCol] || '').trim();
+                    const endQty = parseFloat(row[startQtyCol]) || 0;
+                    const unitText = vendorUOMCol !== -1 && row[vendorUOMCol] ? 
+                        String(row[vendorUOMCol] || '').trim() : '';
+                    
+                    if (code && (code.startsWith('K') || code.startsWith('A') || code.startsWith('L'))) {
+                        const item = parsedData.find(item => item.code === code);
+                        if (item) {
+                            // تحويل رصيد آخر إلى الوحدة الأصغر
+                            const convertedEndQty = convertToSmallestUnit(endQty, unitText, code);
+                            item.endQty = convertedEndQty;
+                            itemCount++;
+                            console.log(`رصيد آخر: ${code} = ${endQty} ${unitText} -> ${convertedEndQty} ${item.unit}`);
+                        }
+                    }
+                }
+            }
+            
+            console.log(`تم تحليل ${itemCount} صنف لرصيد آخر`);
+        }
+
+        // تحليل شيت الاستلامات للأصناف الأساسية
+        function parseReceiptsForBaseItems(data, parsedData) {
+            console.log("تحليل الاستلامات");
+            
+            // البحث عن صف العناوين
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 6) {
+                    if (row[2] && row[2].toString().includes('RM Code')) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.log("لم يتم العثور على عناوين في الاستلامات");
+                return;
+            }
+            
+            // تحليل البيانات
+            let itemCount = 0;
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 6) {
+                    const code = String(row[2] || '').trim();
+                    const quantity = parseFloat(row[5]) || 0;
+                    const unitText = String(row[4] || '').trim();
+                    
+                    if (code) {
+                        const item = parsedData.find(item => item.code === code);
+                        if (item) {
+                            const convertedQty = convertToSmallestUnit(quantity, unitText, code);
+                            item.received += convertedQty;
+                            itemCount++;
+                            console.log(`استلام: ${code} = ${quantity} ${unitText} -> ${convertedQty} ${item.unit}`);
+                        }
+                    }
+                }
+            }
+            
+            console.log(`تم تحليل ${itemCount} صنف للاستلامات`);
+        }
+
+        // تحليل شيت المبيعات للأصناف الأساسية (مع التعامل مع الخلايا المدمجة)*********************************
+// تحليل شيت المبيعات للأصناف الأساسية (مع التعامل مع الخلايا المدمجة)
+function parseSalesForBaseItems(data, parsedData) {
+    console.log("تحليل المبيعات");
+    
+    // البحث عن صف العناوين
+    let headerRowIndex = -1;
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        if (row && row.length >= 16) {
+            const hasItemQty = row[7] && row[7].toString().includes('Item Qty');
+            const hasRmName = row[10] && (row[10].toString().includes('RMName') || row[10].toString().includes('RM Name'));
+            const hasDefinedQty = row[14] && row[14].toString().includes('Defined Qty');
+            const hasTotalUsage = row[15] && row[15].toString().includes('Total Usage Qty');
+            
+            if (hasItemQty || hasRmName || hasDefinedQty || hasTotalUsage) {
+                headerRowIndex = i;
+                break;
+            }
+        }
+    }
+    
+    if (headerRowIndex === -1) {
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            if (row && row.length >= 3 && row[2] && row[2].toString().includes('Order No')) {
+                headerRowIndex = i;
+                break;
+            }
+        }
+    }
+    
+    if (headerRowIndex === -1) {
+        console.log("لم يتم العثور على عناوين في المبيعات");
+        return;
+    }
+    
+    // تجميع المبيعات حسب الصنف
+    const salesMap = {};
+    
+    let lastItemQty = 0;
+    let itemCount = 0;
+    
+    for (let i = headerRowIndex + 1; i < data.length; i++) {
+        const row = data[i];
+        if (row && row.length >= 16) {
+            const rmName = String(row[10] || '').trim();
+            
+            let itemQty = 0;
+            if (row[7] !== undefined && row[7] !== null && row[7] !== '') {
+                itemQty = parseFloat(row[7]) || 0;
+                if (itemQty > 0) {
+                    lastItemQty = itemQty;
+                }
+            } else if (lastItemQty > 0) {
+                itemQty = lastItemQty;
+            }
+            
+            const definedQty = parseFloat(row[14]) || 0;
+            const totalUsageQty = parseFloat(row[15]) || 0;
+            const unitText = String(row[11] || '').trim();
+            
+            let usageQty = 0;
+            if (totalUsageQty > 0) {
+                usageQty = totalUsageQty;
+            } else if (itemQty > 0 && definedQty > 0) {
+                usageQty = itemQty * definedQty;
+            } else if (itemQty > 0 && definedQty === 0) {
+                usageQty = itemQty;
+            }
+            
+            if (rmName && usageQty > 0) {
+                const codeMatch = rmName.match(/([KAL]\d+)/);
+                if (codeMatch) {
+                    const code = codeMatch[0];
+                    let convertedQty = convertToSmallestUnit(usageQty, unitText, code);
+                    
+                    // معالجة خاصة للصنف K1070
+                    if (code === 'K1070') {
+                        // إذا كانت القيمة بالجرام، نقسمها على 1000 لتحويلها إلى كيلو
+                        const unit = unitText.toLowerCase();
+                        if (unit.includes('جرام') || unit.includes('gram') || unit.includes('gm')) {
+                            convertedQty = convertedQty / 1000;
+                        }
+                        // إذا كانت القيمة بالقطع ونحتاج تحويلها من قطع إلى كيلو
+                        // افتراض: كل قطعة = 0.18 كيلو تقريباً
+                        else if (unit.includes('قطعة') || unit.includes('piece') || unit.includes('pc') || unit.includes('pcs')) {
+                            convertedQty = (convertedQty * 0.18) / 1000; // تحويل إلى كيلو
+                        }
+                        // إذا كانت القيمة بالباكيت
+                        else if (unit.includes('باكيت') || unit.includes('packet')) {
+                            // تحويل الباكيت إلى قطع ثم إلى كيلو
+                            const packetSize = 12; // افتراض: باكيت فيه 12 قطعة
+                            convertedQty = (convertedQty * packetSize * 0.18) / 1000; // تحويل إلى كيلو
+                        }
+                        // إذا كانت القيمة بالكرتون
+                        else if (unit.includes('كرتون') || unit.includes('carton')) {
+                            // تحويل الكرتون إلى قطع ثم إلى كيلو
+                            const cartonSize = 40; // افتراض: كرتون فيه 40 قطعة
+                            convertedQty = (convertedQty * cartonSize * 0.18) / 1000; // تحويل إلى كيلو
+                        }
+                    }
+                    
+                    salesMap[code] = (salesMap[code] || 0) + convertedQty;
+                    itemCount++;
+                    console.log(`مبيعات: ${code} = ${usageQty} ${unitText} -> ${convertedQty}`);
+                } else {
+                    const item = parsedData.find(item => 
+                        item.name && rmName &&
+                        (item.name.toLowerCase().includes(rmName.toLowerCase()) ||
+                         rmName.toLowerCase().includes(item.name.toLowerCase()))
+                    );
+                    if (item) {
+                        let convertedQty = convertToSmallestUnit(usageQty, unitText, item.code);
+                        
+                        // معالجة خاصة للصنف K1070
+                        if (item.code === 'K1070') {
+                            // إذا كانت القيمة بالجرام، نقسمها على 1000 لتحويلها إلى كيلو
+                            const unit = unitText.toLowerCase();
+                            if (unit.includes('جرام') || unit.includes('gram') || unit.includes('gm')) {
+                                convertedQty = convertedQty / 1000;
+                            }
+                            // إذا كانت القيمة بالقطع ونحتاج تحويلها من قطع إلى كيلو
+                            else if (unit.includes('قطعة') || unit.includes('piece') || unit.includes('pc') || unit.includes('pcs')) {
+                                convertedQty = (convertedQty * 0.18) / 1000; // تحويل إلى كيلو
+                            }
+                            // إذا كانت القيمة بالباكيت
+                            else if (unit.includes('باكيت') || unit.includes('packet')) {
+                                const packetSize = 12; // افتراض: باكيت فيه 12 قطعة
+                                convertedQty = (convertedQty * packetSize * 0.18) / 1000; // تحويل إلى كيلو
+                            }
+                            // إذا كانت القيمة بالكرتون
+                            else if (unit.includes('كرتون') || unit.includes('carton')) {
+                                const cartonSize = 40; // افتراض: كرتون فيه 40 قطعة
+                                convertedQty = (convertedQty * cartonSize * 0.18) / 1000; // تحويل إلى كيلو
+                            }
+                        }
+                        
+                        salesMap[item.code] = (salesMap[item.code] || 0) + convertedQty;
+                        itemCount++;
+                        console.log(`مبيعات بالاسم: ${item.code} (${item.name}) = ${usageQty} ${unitText} -> ${convertedQty}`);
+                    }
+                }
+            }
+        }
+    }
+    
+    Object.keys(salesMap).forEach(code => {
+        const item = parsedData.find(item => item.code === code);
+        if (item) {
+            item.sales = salesMap[code];
+            // للتأكد من أن K1070 بالكيلو
+            if (code === 'K1070') {
+                console.log(`المبيعات النهائية لـ K1070: ${item.sales} كيلو`);
+            }
+        }
+    });
+    
+    console.log(`تم تحليل ${itemCount} صنف للمبيعات`);
+}
+        // تحليل شيت الجرد الفعلي للأصناف الأساسية ************************************************************
+        function parseActualInventoryForBaseItems(data, parsedData) {
+            console.log("تحليل الجرد الفعلي");
+            
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 4) {
+                    if (row[0] && row[0].toString().includes('الكود')) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.log("لم يتم العثور على عناوين في الجرد الفعلي");
+                return;
+            }
+            
+            let itemCount = 0;
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 4) {
+                    const code = String(row[0] || '').trim();
+                    const actual = parseFloat(row[3]) || 0;
+                    
+                    if (code) {
+                        const item = parsedData.find(item => item.code === code);
+                        if (item) {
+                            item.actual = actual;
+                            itemCount++;
+                            console.log(`جرد فعلي: ${code} = ${actual}`);
+                        }
+                    }
+                }
+            }
+            
+            console.log(`تم تحليل ${itemCount} صنف للجرد الفعلي`);
+        }
+
+        // تحليل شيت التوالف للأصناف الأساسية
+        function parseWastageForBaseItems(data, parsedData) {
+            console.log("تحليل التوالف");
+            
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 6) {
+                    if (row[2] && row[2].toString().includes('RM Code')) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.log("لم يتم العثور على عناوين في التوالف");
+                return;
+            }
+            
+            let itemCount = 0;
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 6) {
+                    const code = String(row[2] || '').trim();
+                    const wastage = parseFloat(row[5]) || 0;
+                    const unitText = String(row[4] || '').trim();
+                    
+                    if (code) {
+                        const item = parsedData.find(item => item.code === code);
+                        if (item) {
+                            const convertedQty = convertToSmallestUnit(wastage, unitText, code);
+                            item.wastage += convertedQty;
+                            itemCount++;
+                            console.log(`توالف: ${code} = ${wastage} ${unitText} -> ${convertedQty} ${item.unit}`);
+                        }
+                    }
+                }
+            }
+            
+            console.log(`تم تحليل ${itemCount} صنف للتوالف`);
+        }
+
+        // تحليل شيت التحويلات للأصناف الأساسية
+        function parseTransfersForBaseItems(data, parsedData, sheetName) {
+            console.log(`تحليل التحويلات: ${sheetName}`);
+            
+            const isOutgoing = sheetName.includes('خارجة') || sheetName.includes('out') || 
+                               sheetName.includes('خارج') || sheetName.includes('الخارجة');
+            const isIncoming = sheetName.includes('داخلة') || sheetName.includes('in') || 
+                               sheetName.includes('داخل') || sheetName.includes('الداخلة');
+            
+            if (!isOutgoing && !isIncoming) {
+                console.log("ليس شيت تحويلات: " + sheetName);
+                return;
+            }
+            
+            // البحث عن صف العناوين
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 5) {
+                    // البحث عن RM Code في أي عمود
+                    for (let j = 0; j < row.length; j++) {
+                        if (row[j] && row[j].toString().includes('RM Code')) {
+                            headerRowIndex = i;
+                            break;
+                        }
+                    }
+                    if (headerRowIndex !== -1) break;
+                    
+                    // أو البحث عن vendor Name
+                    if (row[0] && row[0].toString().includes('vendor Name')) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                    
+                    // أو البحث عن # و Group
+                    if (row[0] && row[0].toString().includes('#') && row[1] && row[1].toString().includes('Group')) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.log("لم يتم العثور على عناوين في التحويلات: " + sheetName);
+                return;
+            }
+            
+            // تحديد مواقع الأعمدة
+            const headerRow = data[headerRowIndex];
+            let rmCodeCol = -1;
+            let rmNameCol = -1;
+            let quantityCol = -1;
+            let uomCol = -1;
+            
+            for (let j = 0; j < headerRow.length; j++) {
+                const cell = headerRow[j];
+                if (cell) {
+                    const cellText = cell.toString().toLowerCase();
+                    if (cellText.includes('rm code')) {
+                        rmCodeCol = j;
+                    } else if (cellText.includes('rm name') || cellText.includes('اسم')) {
+                        rmNameCol = j;
+                    } else if (cellText.includes('quantity') || cellText.includes('كمية')) {
+                        quantityCol = j;
+                    } else if (cellText.includes('uom') || cellText.includes('وحدة')) {
+                        uomCol = j;
+                    }
+                }
+            }
+            
+            // إذا لم نجد بالبحث، نستخدم المواضع الافتراضية حسب تنسيق الملف
+            if (rmCodeCol === -1) {
+                // في التحويلات الداخلة، RM Code في العمود 2
+                // في التحويلات الخارجة، RM Code في العمود 1
+                if (isIncoming) {
+                    rmCodeCol = 2;
+                } else if (isOutgoing) {
+                    rmCodeCol = 1;
+                }
+            }
+            
+            if (quantityCol === -1) quantityCol = 4;
+            if (uomCol === -1) uomCol = 3;
+            
+            console.log(`مواقع الأعمدة للتحويلات ${sheetName}:`, { rmCodeCol, rmNameCol, quantityCol, uomCol });
+            
+            // تحليل البيانات
+            let itemCount = 0;
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length > Math.max(rmCodeCol, quantityCol)) {
+                    let code = '';
+                    
+                    // الحصول على الكود
+                    if (rmCodeCol !== -1 && row[rmCodeCol]) {
+                        code = String(row[rmCodeCol]).trim();
+                    }
+                    
+                    // إذا لم نجد الكود، نحاول استخراجه من اسم الصنف
+                    if (!code && rmNameCol !== -1 && row[rmNameCol]) {
+                        const nameText = String(row[rmNameCol]);
+                        const codeMatch = nameText.match(/([KAL]\d+)/);
+                        if (codeMatch) {
+                            code = codeMatch[0];
+                        }
+                    }
+                    
+                    if (code && (code.startsWith('K') || code.startsWith('A') || code.startsWith('L'))) {
+                        const quantity = parseFloat(row[quantityCol]) || 0;
+                        const unitText = uomCol !== -1 && row[uomCol] ? 
+                            String(row[uomCol] || '').trim() : '';
+                        
+                        if (quantity > 0) {
+                            const item = parsedData.find(item => item.code === code);
+                            if (item) {
+                                const convertedQty = convertToSmallestUnit(quantity, unitText, code);
+                                if (isOutgoing) {
+                                    item.transferOut += convertedQty;
+                                    console.log(`تحويل خارجة: ${code} = ${quantity} ${unitText} -> ${convertedQty} ${item.unit}`);
+                                } else if (isIncoming) {
+                                    item.transferIn += convertedQty;
+                                    console.log(`تحويل داخلة: ${code} = ${quantity} ${unitText} -> ${convertedQty} ${item.unit}`);
+                                }
+                                itemCount++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            console.log(`تم تحليل ${itemCount} صنف للتحويلات ${sheetName}`);
+        }
+
+        // دالة حفظ PDF
+        async function saveInventoryPDF() {
+            if (!window.jspdf) {
+                alert('مكتبة PDF غير محملة. يرجى تحديث الصفحة.');
+                return;
+            }
+            
+            try {
+                const element = document.getElementById('pdf-template');
+                const selectedRestaurant = restaurantSearch.value;
+                
+                if (!selectedRestaurant) {
+                    alert('يرجى اختيار المطعم أولاً');
+                    return;
+                }
+                
+                if (inventoryData.length === 0) {
+                    alert('لا توجد بيانات لعرضها في PDF. يرجى تحميل البيانات أولاً.');
+                    return;
+                }
+                
+                document.getElementById('pdf-restaurant-name').textContent = selectedRestaurant;
+                
+                const selectedDate = inventoryDate.value;
+                const dateParts = selectedDate.split('-');
+                const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                document.getElementById('pdf-inventory-date').textContent = formattedDate;
+                
+                const groupedDifferences = calculateGroupedDifferences(inventoryData);
+                
+                const pdfTableBody = document.getElementById('pdf-table-body');
+                pdfTableBody.innerHTML = '';
+                
+                // تجميع البيانات حسب المجموعات لملف PDF
+                const pdfRowGroups = new Map();
+                
+                inventoryData.forEach((item, index) => {
+                    const code = item.code;
+                    let groupKey = null;
+                    
+                    if (groupedItems[code]) {
+                        const group = groupedItems[code];
+                        groupKey = group.sort().join('-');
+                    } else {
+                        groupKey = code; // صنف فردي
+                    }
+                    
+                    if (!pdfRowGroups.has(groupKey)) {
+                        pdfRowGroups.set(groupKey, []);
+                    }
+                    pdfRowGroups.get(groupKey).push({ item, index });
+                });
+                
+                // إنشاء الصفوف لملف PDF
+                pdfRowGroups.forEach((groupItems, groupKey) => {
+                    const isGrouped = groupItems.length > 1 && groupKey.includes('-');
+                    const groupDiff = groupedDifferences[groupKey] ? groupedDifferences[groupKey].totalDifference : 0;
+                    const roundedGroupDiff = roundToDecimal(groupDiff);
+                    const groupDiffColor = roundedGroupDiff > 0 ? 'color: #38a169;' : roundedGroupDiff < 0 ? 'color: #c53030;' : '';
+                    
+                    groupItems.forEach((groupItem, groupIndex) => {
+                        const item = groupItem.item;
+                        
+                        const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
+                        const difference = item.actual - closingBalance;
+                        const finalBalance = item.endQty || item.actual;
+                        const programDifference = finalBalance - closingBalance;
+                        
+                        // تحويل القيم بالجرام إلى كيلو (إذا كانت الوحدة جرام)
+                        let displayOpening = item.opening;
+                        let displayReceived = item.received;
+                        let displayTransferIn = item.transferIn;
+                        let displayTransferOut = item.transferOut;
+                        let displayWastage = item.wastage;
+                        let displaySales = item.sales;
+                        let displayClosingBalance = closingBalance;
+                        let displayActual = item.actual;
+                        let displayFinalBalance = finalBalance;
+                        
+                        // إذا كانت الوحدة جرام، نقسم على 1000 لتحويل إلى كيلو
+                        if (item.unit === 'gram') {
+                            displayOpening = convertGramToKilo(item.opening);
+                            displayReceived = convertGramToKilo(item.received);
+                            displayTransferIn = convertGramToKilo(item.transferIn);
+                            displayTransferOut = convertGramToKilo(item.transferOut);
+                            displayWastage = convertGramToKilo(item.wastage);
+                            displaySales = convertGramToKilo(item.sales);
+                            displayClosingBalance = convertGramToKilo(closingBalance);
+                            displayActual = convertGramToKilo(item.actual);
+                            displayFinalBalance = convertGramToKilo(finalBalance);
+                        }
+                        
+                        // تقريب الأرقام
+                        const roundedOpening = roundToDecimal(displayOpening);
+                        const roundedReceived = roundToDecimal(displayReceived);
+                        const roundedTransferIn = roundToDecimal(displayTransferIn);
+                        const roundedTransferOut = roundToDecimal(displayTransferOut);
+                        const roundedWastage = roundToDecimal(displayWastage);
+                        const roundedSales = roundToDecimal(displaySales);
+                        const roundedClosingBalance = roundToDecimal(displayClosingBalance);
+                        const roundedActual = roundToDecimal(displayActual);
+                        const roundedDifference = roundToDecimal(difference);
+                        const roundedFinalBalance = roundToDecimal(displayFinalBalance);
+                        const roundedProgramDifference = roundToDecimal(programDifference);
+                        
+                        const salesColor = roundedSales > 0 ? 'color: #c53030;' : '';
+                        const wastageColor = roundedWastage > 0 ? 'color: #c53030;' : '';
+                        const transferOutColor = roundedTransferOut > 0 ? 'color: #c53030;' : '';
+                        const diffColor = roundedDifference > 0 ? 'color: #38a169;' : roundedDifference < 0 ? 'color: #c53030;' : '';
+                        const programDiffColor = roundedProgramDifference > 0 ? 'color: #38a169;' : roundedProgramDifference < 0 ? 'color: #c53030;' : '';
+                        
+                        const displayValue = (val) => val > 0 ? val.toFixed(1) : '-';
+                        
+                        const row = document.createElement('tr');
+                        
+                        // بناء HTML للصف في PDF
+                        let rowHtml = `
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold;">${item.code}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: right; font-size: 9px; direction: rtl;">${item.name}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center;">${displayValue(roundedOpening)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center;">${item.unit === 'gram' ? 'kilo' : item.unit}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center;">${displayValue(roundedReceived)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center;">${displayValue(roundedTransferIn)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; ${transferOutColor}">${displayValue(roundedTransferOut)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; ${wastageColor}">${displayValue(roundedWastage)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; ${salesColor}">${displayValue(roundedSales)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold;">${roundedClosingBalance > 0 ? roundedClosingBalance.toFixed(1) : '-'}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold;">${displayValue(roundedActual)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold; ${diffColor}">${roundedDifference > 0 ? '+' : ''}${roundedDifference !== 0 ? roundedDifference.toFixed(1) : '-'}</td>
+                        `;
+                        
+                        // إضافة خلية تجميع الفروقات في PDF
+                        if (groupIndex === 0 && isGrouped) {
+                            // أول صف في المجموعة المدمجة
+                            rowHtml += `
+                                <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold; font-size: 11px; ${groupDiffColor}" rowspan="${groupItems.length}">
+                                    ${roundedGroupDiff > 0 ? '+' : ''}${roundedGroupDiff !== 0 ? roundedGroupDiff.toFixed(1) : '-'}
+                                </td>
+                            `;
+                        } else if (!isGrouped) {
+                            // صنف فردي
+                            const individualDiff = roundedDifference;
+                            const individualDiffColor = individualDiff > 0 ? 'color: #38a169;' : individualDiff < 0 ? 'color: #c53030;' : '';
+                            rowHtml += `
+                                <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold; font-size: 11px; ${individualDiffColor}">
+                                    ${individualDiff > 0 ? '+' : ''}${individualDiff !== 0 ? individualDiff.toFixed(1) : '-'}
+                                </td>
+                            `;
+                        } else {
+                            // صفوف لاحقة في المجموعة المدمجة - نترك الخلية فارغة
+                            rowHtml += `<td style="padding: 3px; border: 1px solid #000;"></td>`;
+                        }
+                        
+                        // إضافة العمودين الأخيرين في PDF
+                        rowHtml += `
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold;">${displayValue(roundedFinalBalance)}</td>
+                            <td style="padding: 3px; border: 1px solid #000; text-align: center; font-weight: bold; ${programDiffColor}">${roundedProgramDifference > 0 ? '+' : ''}${roundedProgramDifference !== 0 ? roundedProgramDifference.toFixed(1) : '-'}</td>
+                        `;
+                        
+                        row.innerHTML = rowHtml;
+                        pdfTableBody.appendChild(row);
+                    });
+                });
+                
+                const originalDisplay = element.style.display;
+                const originalPosition = element.style.position;
+                const originalLeft = element.style.left;
+                const originalTop = element.style.top;
+                const originalWidth = element.style.width;
+                const originalHeight = element.style.height;
+                const originalZIndex = element.style.zIndex;
+                
+                element.style.display = 'block';
+                element.style.position = 'fixed';
+                element.style.left = '0';
+                element.style.top = '0';
+                element.style.width = '1123px';
+                element.style.height = '794px';
+                element.style.zIndex = '10000';
+                element.style.background = 'white';
+                element.style.padding = '10px';
+                
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#FFFFFF',
+                    width: 1123,
+                    height: 794,
+                    windowWidth: 1123,
+                    windowHeight: 794
+                });
+                
+                element.style.display = originalDisplay;
+                element.style.position = originalPosition;
+                element.style.left = originalLeft;
+                element.style.top = originalTop;
+                element.style.width = originalWidth;
+                element.style.height = originalHeight;
+                element.style.zIndex = originalZIndex;
+                
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const pdf = new window.jspdf.jsPDF('l', 'pt', 'a4');
+                
+                const imgWidth = pdf.internal.pageSize.getWidth();
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+                
+                const cleanRestaurantName = selectedRestaurant.replace(/[^\w\u0600-\u06FF\s]/g, '');
+                const fileName = `تقرير_جرد_${cleanRestaurantName}_${dateParts[2]}-${dateParts[1]}-${dateParts[0]}.pdf`;
+                
+                pdf.save(fileName);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('حدث خطأ أثناء إنشاء ملف PDF: ' + error.message);
+            }
+        }
+
+        // مسح البيانات
+        function clearData() {
+            if (confirm('هل أنت متأكد من مسح جميع البيانات الحالية؟')) {
+                inventoryData = [];
+                tableBody.innerHTML = '';
+                excelFileInput.value = '';
+                alert('تم مسح جميع البيانات بنجاح.');
+            }
+        }
+
+        // تهيئة الأحداث
+        function initializeEvents() {
+            excelFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const validExtensions = ['.xlsx', '.xls', '.xlsm'];
+                    const fileExtension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+                    
+                    if (validExtensions.includes(fileExtension)) {
+                        handleExcelFile(file);
+                    } else {
+                        alert('يرجى اختيار ملف Excel صالح (امتداد .xlsx أو .xls أو .xlsm)');
+                    }
+                }
+            });
+            
+            exportPdfBtn.addEventListener('click', saveInventoryPDF);
+            clearDataBtn.addEventListener('click', clearData);
+            
+            restaurantSearch.addEventListener('change', function() {
+                if (this.value && inventoryData.length > 0) {
+                    loadInventoryData();
+                }
+            });
+            
+            inventoryDate.addEventListener('change', function() {
+                if (restaurantSearch.value && inventoryData.length > 0) {
+                    loadInventoryData();
+                }
+            });
+        }
+
+        // تهيئة التطبيق
+        function initializeApp() {
+            initializeDate();
+            initializeRestaurantSearch();
+            initializeEvents();
+        }
+
+        // تشغيل التطبيق
+        initializeApp();
+    </script>
+</body>
+</html>
