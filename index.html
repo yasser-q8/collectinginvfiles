@@ -395,6 +395,67 @@
             font-weight: 600;
         }
 
+        /* توقيع المطور */
+        .signature-card {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #FF6E00, #2196F3);
+            color: white;
+            padding: 10.5px 17.5px;
+            border-radius: 8.5px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 1000;
+            animation: float 6s ease-in-out infinite;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .signature-card:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 12px 35px rgba(0,0,0,0.4); 
+        }
+
+        @keyframes float { 
+            0% { transform: translateY(0px); } 
+            50% { transform: translateY(-15px); } 
+            100% { transform: translateY(0px); } 
+        }
+
+        .signature-card::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(135deg, #80EF80, #2196F3);
+            border-radius: 14px;
+            z-index: -1;
+            animation: borderGlow 3s linear infinite;
+            background-size: 400%;
+        }
+
+        @keyframes borderGlow { 
+            0% { background-position: 0% 50%; } 
+            50% { background-position: 100% 50%; } 
+            100% { background-position: 0% 50%; } 
+        }
+
+        .signature-card .name { 
+            font-size: 0.95rem; 
+            font-weight: 700; 
+            margin-bottom: 5px; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3); 
+        }
+
+        .signature-card .title { 
+            font-size: 0.7rem; 
+            opacity: 0.9; 
+            font-weight: 500; 
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header {
@@ -419,6 +480,24 @@
             .buttons-container {
                 width: 100%;
                 justify-content: center;
+            }
+            
+            .signature-card { 
+                position: relative; 
+                bottom: auto; 
+                left: auto; 
+                margin: 20px auto 0; 
+                width: fit-content; 
+                animation: none; 
+            } 
+            .signature-card:hover { 
+                transform: none; 
+            }
+        }
+        
+        @media print {
+            .signature-card {
+                display: none;
             }
         }
     </style>
@@ -552,6 +631,12 @@
             <tbody id="pdf-table-body" style="font-size: 9px;">
             </tbody>
         </table>
+    </div>
+    
+    <!-- توقيع المطور -->
+    <div class="signature-card">
+        <div class="name">Yasser Elkhateeb</div>
+        <div class="title">مطور البرنامج 67011143</div>
     </div>
 
     <script>
@@ -789,213 +874,214 @@
         }
 
         // تحميل وعرض بيانات الجرد ***************************************************************
-// تحميل وعرض بيانات الجرد
-function loadInventoryData() {
-    const selectedRestaurant = restaurantSearch.value;
-    const selectedDate = inventoryDate.value;
-    
-    if (!selectedRestaurant) {
-        alert('يرجى اختيار المطعم أولاً');
-        return;
-    }
-    
-    if (inventoryData.length === 0) {
-        alert('لا توجد بيانات لعرضها. يرجى تحميل بيانات من ملف Excel أولاً.');
-        return;
-    }
-    
-    // مسح الجدول الحالي
-    tableBody.innerHTML = '';
-    
-    // حساب التجميعات للأصناف المحددة
-    const groupedDifferences = calculateGroupedDifferences(inventoryData);
-    
-    // إنشاء خريطة لتتبع الصفوف المدمجة
-    const rowGroups = new Map();
-    const processedCodes = new Set(); // لتجنب معالجة نفس الكود مرتين
-    
-    // المرحلة الأولى: تجميع البيانات حسب المجموعات
-    inventoryData.forEach((item) => {
-        const code = item.code;
-        
-        // إذا تمت معالجة هذا الكود مسبقاً، نتخطاه
-        if (processedCodes.has(code)) return;
-        
-        let groupKey = null;
-        
-        // التحقق مما إذا كان هذا الكود ينتمي إلى مجموعة محددة
-        if (groupedItems[code]) {
-            const group = groupedItems[code];
+        // تحميل وعرض بيانات الجرد
+        function loadInventoryData() {
+            const selectedRestaurant = restaurantSearch.value;
+            const selectedDate = inventoryDate.value;
             
-            // التحقق من وجود جميع الأصناف في المجموعة في البيانات الحالية
-            const existingGroupItems = group.filter(groupCode => 
-                inventoryData.some(dataItem => dataItem.code === groupCode)
-            );
+            if (!selectedRestaurant) {
+                alert('يرجى اختيار المطعم أولاً');
+                return;
+            }
             
-            if (existingGroupItems.length > 1) {
-                // إذا كان هناك أكثر من صنف موجود، ننشئ مجموعة
-                groupKey = existingGroupItems.sort().join('-');
+            if (inventoryData.length === 0) {
+                alert('لا توجد بيانات لعرضها. يرجى تحميل بيانات من ملف Excel أولاً.');
+                return;
+            }
+            
+            // مسح الجدول الحالي
+            tableBody.innerHTML = '';
+            
+            // حساب التجميعات للأصناف المحددة
+            const groupedDifferences = calculateGroupedDifferences(inventoryData);
+            
+            // إنشاء خريطة لتتبع الصفوف المدمجة
+            const rowGroups = new Map();
+            const processedCodes = new Set(); // لتجنب معالجة نفس الكود مرتين
+            
+            // المرحلة الأولى: تجميع البيانات حسب المجموعات
+            inventoryData.forEach((item) => {
+                const code = item.code;
                 
-                // تجميع الأصناف في هذه المجموعة
-                const groupItems = existingGroupItems.map(groupCode => 
-                    inventoryData.find(dataItem => dataItem.code === groupCode)
-                ).filter(item => item); // إزالة أي عناصر undefined
+                // إذا تمت معالجة هذا الكود مسبقاً، نتخطاه
+                if (processedCodes.has(code)) return;
                 
-                if (groupItems.length > 1) {
-                    rowGroups.set(groupKey, groupItems);
+                let groupKey = null;
+                
+                // التحقق مما إذا كان هذا الكود ينتمي إلى مجموعة محددة
+                if (groupedItems[code]) {
+                    const group = groupedItems[code];
                     
-                    // وضع علامة على جميع الأكواد في المجموعة كمعالجة
-                    existingGroupItems.forEach(groupCode => {
-                        processedCodes.add(groupCode);
-                    });
+                    // التحقق من وجود جميع الأصناف في المجموعة في البيانات الحالية
+                    const existingGroupItems = group.filter(groupCode => 
+                        inventoryData.some(dataItem => dataItem.code === groupCode)
+                    );
+                    
+                    if (existingGroupItems.length > 1) {
+                        // إذا كان هناك أكثر من صنف موجود، ننشئ مجموعة
+                        groupKey = existingGroupItems.sort().join('-');
+                        
+                        // تجميع الأصناف في هذه المجموعة
+                        const groupItems = existingGroupItems.map(groupCode => 
+                            inventoryData.find(dataItem => dataItem.code === groupCode)
+                        ).filter(item => item); // إزالة أي عناصر undefined
+                        
+                        if (groupItems.length > 1) {
+                            rowGroups.set(groupKey, groupItems);
+                            
+                            // وضع علامة على جميع الأكواد في المجموعة كمعالجة
+                            existingGroupItems.forEach(groupCode => {
+                                processedCodes.add(groupCode);
+                            });
+                        } else {
+                            // إذا كان هناك صنف واحد فقط، نعامله كفردي
+                            groupKey = code;
+                            rowGroups.set(groupKey, [item]);
+                            processedCodes.add(code);
+                        }
+                    } else {
+                        // إذا كان هناك صنف واحد فقط، نعامله كفردي
+                        groupKey = code;
+                        rowGroups.set(groupKey, [item]);
+                        processedCodes.add(code);
+                    }
                 } else {
-                    // إذا كان هناك صنف واحد فقط، نعامله كفردي
+                    // صنف فردي
                     groupKey = code;
                     rowGroups.set(groupKey, [item]);
                     processedCodes.add(code);
                 }
-            } else {
-                // إذا كان هناك صنف واحد فقط، نعامله كفردي
-                groupKey = code;
-                rowGroups.set(groupKey, [item]);
-                processedCodes.add(code);
-            }
-        } else {
-            // صنف فردي
-            groupKey = code;
-            rowGroups.set(groupKey, [item]);
-            processedCodes.add(code);
-        }
-    });
-    
-    // المرحلة الثانية: إنشاء الصفوف
-    rowGroups.forEach((groupItems, groupKey) => {
-        const isGrouped = groupKey.includes('-') && groupItems.length > 1;
-        
-        // حساب الفرق المجمع للمجموعة
-        let groupTotalDifference = 0;
-        if (isGrouped) {
-            groupItems.forEach(item => {
-                const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
-                const difference = item.actual - closingBalance;
-                groupTotalDifference += difference;
+            });
+            
+            // المرحلة الثانية: إنشاء الصفوف
+            rowGroups.forEach((groupItems, groupKey) => {
+                const isGrouped = groupKey.includes('-') && groupItems.length > 1;
+                
+                // حساب الفرق المجمع للمجموعة
+                let groupTotalDifference = 0;
+                if (isGrouped) {
+                    groupItems.forEach(item => {
+                        const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
+                        const difference = item.actual - closingBalance;
+                        groupTotalDifference += difference;
+                    });
+                }
+                
+                const roundedGroupDiff = roundToDecimal(groupTotalDifference);
+                const groupDiffClass = roundedGroupDiff > 0 ? 'positive' : (roundedGroupDiff < 0 ? 'negative' : 'zero');
+                
+                // إنشاء صفوف المجموعة
+                groupItems.forEach((item, itemIndex) => {
+                    const row = document.createElement('tr');
+                    
+                    // حساب القيم
+                    const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
+                    const difference = item.actual - closingBalance;
+                    const finalBalance = item.endQty || item.actual;
+                    const programDifference = finalBalance - closingBalance;
+                    
+                    // تحويل القيم بالجرام إلى كيلو (إذا كانت الوحدة جرام)
+                    let displayOpening = item.opening;
+                    let displayReceived = item.received;
+                    let displayTransferIn = item.transferIn;
+                    let displayTransferOut = item.transferOut;
+                    let displayWastage = item.wastage;
+                    let displaySales = item.sales;
+                    let displayClosingBalance = closingBalance;
+                    let displayActual = item.actual;
+                    let displayFinalBalance = finalBalance;
+                    
+                    // إذا كانت الوحدة جرام، نقسم على 1000 لتحويل إلى كيلو
+                    if (item.unit === 'gram') {
+                        displayOpening = convertGramToKilo(item.opening);
+                        displayReceived = convertGramToKilo(item.received);
+                        displayTransferIn = convertGramToKilo(item.transferIn);
+                        displayTransferOut = convertGramToKilo(item.transferOut);
+                        displayWastage = convertGramToKilo(item.wastage);
+                        displaySales = convertGramToKilo(item.sales);
+                        displayClosingBalance = convertGramToKilo(closingBalance);
+                        displayActual = convertGramToKilo(item.actual);
+                        displayFinalBalance = convertGramToKilo(finalBalance);
+                    }
+                    
+                    // تقريب جميع الأرقام
+                    const roundedOpening = roundToDecimal(displayOpening);
+                    const roundedReceived = roundToDecimal(displayReceived);
+                    const roundedTransferIn = roundToDecimal(displayTransferIn);
+                    const roundedTransferOut = roundToDecimal(displayTransferOut);
+                    const roundedWastage = roundToDecimal(displayWastage);
+                    const roundedSales = roundToDecimal(displaySales);
+                    const roundedClosingBalance = roundToDecimal(displayClosingBalance);
+                    const roundedActual = roundToDecimal(displayActual);
+                    const roundedDifference = roundToDecimal(difference);
+                    const roundedFinalBalance = roundToDecimal(displayFinalBalance);
+                    const roundedProgramDifference = roundToDecimal(programDifference);
+                    
+                    // تحديد فئة الأرقام
+                    const openingClass = roundedOpening > 0 ? '' : 'zero';
+                    const receivedClass = roundedReceived > 0 ? '' : 'zero';
+                    const transferInClass = roundedTransferIn > 0 ? '' : 'zero';
+                    const transferOutClass = roundedTransferOut > 0 ? 'deduction' : 'zero';
+                    const wastageClass = roundedWastage > 0 ? 'deduction' : 'zero';
+                    const salesClass = roundedSales > 0 ? 'deduction' : 'zero';
+                    const closingClass = roundedClosingBalance > 0 ? '' : 'zero';
+                    const actualClass = roundedActual > 0 ? '' : 'zero';
+                    const endQtyClass = roundedFinalBalance > 0 ? '' : 'zero';
+                    const diffClass = roundedDifference > 0 ? 'positive' : (roundedDifference < 0 ? 'negative' : 'zero');
+                    const programDiffClass = roundedProgramDifference > 0 ? 'positive' : (roundedProgramDifference < 0 ? 'negative' : 'zero');
+                    
+                    // بناء HTML للصف - العمود 1-12
+                    let rowHtml = `
+                        <td><strong>${item.code}</strong></td>
+                        <td class="item-name">${item.name}</td>
+                        <td class="${openingClass}">${formatNumber(roundedOpening)}</td>
+                        <td>${item.unit === 'gram' ? 'kilo' : item.unit}</td>
+                        <td class="${receivedClass}">${formatNumber(roundedReceived)}</td>
+                        <td class="${transferInClass}">${formatNumber(roundedTransferIn)}</td>
+                        <td class="${transferOutClass}">${formatNumber(roundedTransferOut)}</td>
+                        <td class="${wastageClass}">${formatNumber(roundedWastage)}</td>
+                        <td class="${salesClass}">${formatNumber(roundedSales)}</td>
+                        <td class="${closingClass}">${formatNumber(roundedClosingBalance)}</td>
+                        <td class="${actualClass}">${formatNumber(roundedActual)}</td>
+                        <td class="${diffClass}">${roundedDifference > 0 ? '+' : ''}${formatNumber(roundedDifference)}</td>
+                    `;
+                    
+                    // إضافة خلية تجميع الفروقات (العمود 13)
+                    if (itemIndex === 0) {
+                        if (isGrouped) {
+                            // أول صف في المجموعة المدمجة - نستخدم rowspan
+                            rowHtml += `
+                                <td class="grouped-difference ${groupDiffClass}" rowspan="${groupItems.length}">
+                                    ${roundedGroupDiff > 0 ? '+' : ''}${roundedGroupDiff !== 0 ? roundedGroupDiff : '-'}
+                                </td>
+                            `;
+                        } else {
+                            // صنف فردي
+                            const individualDiff = roundedDifference;
+                            const individualDiffClass = individualDiff > 0 ? 'positive' : (individualDiff < 0 ? 'negative' : 'zero');
+                            rowHtml += `
+                                <td class="grouped-difference ${individualDiffClass}">
+                                    ${individualDiff > 0 ? '+' : ''}${individualDiff !== 0 ? individualDiff : '-'}
+                                </td>
+                            `;
+                        }
+                    } else {
+                        // صفوف لاحقة في المجموعة المدمجة - لا نضيف شيئاً لأن الخلية مغطاة بواسطة rowspan
+                        // لا نضيف <td> هنا!
+                    }
+                    
+                    // إضافة العمودين الأخيرين (14 و 15)
+                    rowHtml += `
+                        <td class="${endQtyClass}">${formatNumber(roundedFinalBalance)}</td>
+                        <td class="${programDiffClass}">${roundedProgramDifference > 0 ? '+' : ''}${formatNumber(roundedProgramDifference)}</td>
+                    `;
+                    
+                    row.innerHTML = rowHtml;
+                    tableBody.appendChild(row);
+                });
             });
         }
         
-        const roundedGroupDiff = roundToDecimal(groupTotalDifference);
-        const groupDiffClass = roundedGroupDiff > 0 ? 'positive' : (roundedGroupDiff < 0 ? 'negative' : 'zero');
-        
-        // إنشاء صفوف المجموعة
-        groupItems.forEach((item, itemIndex) => {
-            const row = document.createElement('tr');
-            
-            // حساب القيم
-            const closingBalance = item.opening + item.received + item.transferIn - item.transferOut - item.wastage - item.sales;
-            const difference = item.actual - closingBalance;
-            const finalBalance = item.endQty || item.actual;
-            const programDifference = finalBalance - closingBalance;
-            
-            // تحويل القيم بالجرام إلى كيلو (إذا كانت الوحدة جرام)
-            let displayOpening = item.opening;
-            let displayReceived = item.received;
-            let displayTransferIn = item.transferIn;
-            let displayTransferOut = item.transferOut;
-            let displayWastage = item.wastage;
-            let displaySales = item.sales;
-            let displayClosingBalance = closingBalance;
-            let displayActual = item.actual;
-            let displayFinalBalance = finalBalance;
-            
-            // إذا كانت الوحدة جرام، نقسم على 1000 لتحويل إلى كيلو
-            if (item.unit === 'gram') {
-                displayOpening = convertGramToKilo(item.opening);
-                displayReceived = convertGramToKilo(item.received);
-                displayTransferIn = convertGramToKilo(item.transferIn);
-                displayTransferOut = convertGramToKilo(item.transferOut);
-                displayWastage = convertGramToKilo(item.wastage);
-                displaySales = convertGramToKilo(item.sales);
-                displayClosingBalance = convertGramToKilo(closingBalance);
-                displayActual = convertGramToKilo(item.actual);
-                displayFinalBalance = convertGramToKilo(finalBalance);
-            }
-            
-            // تقريب جميع الأرقام
-            const roundedOpening = roundToDecimal(displayOpening);
-            const roundedReceived = roundToDecimal(displayReceived);
-            const roundedTransferIn = roundToDecimal(displayTransferIn);
-            const roundedTransferOut = roundToDecimal(displayTransferOut);
-            const roundedWastage = roundToDecimal(displayWastage);
-            const roundedSales = roundToDecimal(displaySales);
-            const roundedClosingBalance = roundToDecimal(displayClosingBalance);
-            const roundedActual = roundToDecimal(displayActual);
-            const roundedDifference = roundToDecimal(difference);
-            const roundedFinalBalance = roundToDecimal(displayFinalBalance);
-            const roundedProgramDifference = roundToDecimal(programDifference);
-            
-            // تحديد فئة الأرقام
-            const openingClass = roundedOpening > 0 ? '' : 'zero';
-            const receivedClass = roundedReceived > 0 ? '' : 'zero';
-            const transferInClass = roundedTransferIn > 0 ? '' : 'zero';
-            const transferOutClass = roundedTransferOut > 0 ? 'deduction' : 'zero';
-            const wastageClass = roundedWastage > 0 ? 'deduction' : 'zero';
-            const salesClass = roundedSales > 0 ? 'deduction' : 'zero';
-            const closingClass = roundedClosingBalance > 0 ? '' : 'zero';
-            const actualClass = roundedActual > 0 ? '' : 'zero';
-            const endQtyClass = roundedFinalBalance > 0 ? '' : 'zero';
-            const diffClass = roundedDifference > 0 ? 'positive' : (roundedDifference < 0 ? 'negative' : 'zero');
-            const programDiffClass = roundedProgramDifference > 0 ? 'positive' : (roundedProgramDifference < 0 ? 'negative' : 'zero');
-            
-            // بناء HTML للصف - العمود 1-12
-            let rowHtml = `
-                <td><strong>${item.code}</strong></td>
-                <td class="item-name">${item.name}</td>
-                <td class="${openingClass}">${formatNumber(roundedOpening)}</td>
-                <td>${item.unit === 'gram' ? 'kilo' : item.unit}</td>
-                <td class="${receivedClass}">${formatNumber(roundedReceived)}</td>
-                <td class="${transferInClass}">${formatNumber(roundedTransferIn)}</td>
-                <td class="${transferOutClass}">${formatNumber(roundedTransferOut)}</td>
-                <td class="${wastageClass}">${formatNumber(roundedWastage)}</td>
-                <td class="${salesClass}">${formatNumber(roundedSales)}</td>
-                <td class="${closingClass}">${formatNumber(roundedClosingBalance)}</td>
-                <td class="${actualClass}">${formatNumber(roundedActual)}</td>
-                <td class="${diffClass}">${roundedDifference > 0 ? '+' : ''}${formatNumber(roundedDifference)}</td>
-            `;
-            
-            // إضافة خلية تجميع الفروقات (العمود 13)
-            if (itemIndex === 0) {
-                if (isGrouped) {
-                    // أول صف في المجموعة المدمجة - نستخدم rowspan
-                    rowHtml += `
-                        <td class="grouped-difference ${groupDiffClass}" rowspan="${groupItems.length}">
-                            ${roundedGroupDiff > 0 ? '+' : ''}${roundedGroupDiff !== 0 ? roundedGroupDiff : '-'}
-                        </td>
-                    `;
-                } else {
-                    // صنف فردي
-                    const individualDiff = roundedDifference;
-                    const individualDiffClass = individualDiff > 0 ? 'positive' : (individualDiff < 0 ? 'negative' : 'zero');
-                    rowHtml += `
-                        <td class="grouped-difference ${individualDiffClass}">
-                            ${individualDiff > 0 ? '+' : ''}${individualDiff !== 0 ? individualDiff : '-'}
-                        </td>
-                    `;
-                }
-            } else {
-                // صفوف لاحقة في المجموعة المدمجة - لا نضيف شيئاً لأن الخلية مغطاة بواسطة rowspan
-                // لا نضيف <td> هنا!
-            }
-            
-            // إضافة العمودين الأخيرين (14 و 15)
-            rowHtml += `
-                <td class="${endQtyClass}">${formatNumber(roundedFinalBalance)}</td>
-                <td class="${programDiffClass}">${roundedProgramDifference > 0 ? '+' : ''}${formatNumber(roundedProgramDifference)}</td>
-            `;
-            
-            row.innerHTML = rowHtml;
-            tableBody.appendChild(row);
-        });
-    });
-}
         // قراءة ملف Excel وتحليل البيانات ***************************************************************
         function handleExcelFile(file) {
             const reader = new FileReader();
@@ -1423,165 +1509,166 @@ function loadInventoryData() {
         }
 
         // تحليل شيت المبيعات للأصناف الأساسية (مع التعامل مع الخلايا المدمجة)*********************************
-// تحليل شيت المبيعات للأصناف الأساسية (مع التعامل مع الخلايا المدمجة)
-function parseSalesForBaseItems(data, parsedData) {
-    console.log("تحليل المبيعات");
-    
-    // البحث عن صف العناوين
-    let headerRowIndex = -1;
-    for (let i = 0; i < data.length; i++) {
-        const row = data[i];
-        if (row && row.length >= 16) {
-            const hasItemQty = row[7] && row[7].toString().includes('Item Qty');
-            const hasRmName = row[10] && (row[10].toString().includes('RMName') || row[10].toString().includes('RM Name'));
-            const hasDefinedQty = row[14] && row[14].toString().includes('Defined Qty');
-            const hasTotalUsage = row[15] && row[15].toString().includes('Total Usage Qty');
+        // تحليل شيت المبيعات للأصناف الأساسية (مع التعامل مع الخلايا المدمجة)
+        function parseSalesForBaseItems(data, parsedData) {
+            console.log("تحليل المبيعات");
             
-            if (hasItemQty || hasRmName || hasDefinedQty || hasTotalUsage) {
-                headerRowIndex = i;
-                break;
-            }
-        }
-    }
-    
-    if (headerRowIndex === -1) {
-        for (let i = 0; i < data.length; i++) {
-            const row = data[i];
-            if (row && row.length >= 3 && row[2] && row[2].toString().includes('Order No')) {
-                headerRowIndex = i;
-                break;
-            }
-        }
-    }
-    
-    if (headerRowIndex === -1) {
-        console.log("لم يتم العثور على عناوين في المبيعات");
-        return;
-    }
-    
-    // تجميع المبيعات حسب الصنف
-    const salesMap = {};
-    
-    let lastItemQty = 0;
-    let itemCount = 0;
-    
-    for (let i = headerRowIndex + 1; i < data.length; i++) {
-        const row = data[i];
-        if (row && row.length >= 16) {
-            const rmName = String(row[10] || '').trim();
-            
-            let itemQty = 0;
-            if (row[7] !== undefined && row[7] !== null && row[7] !== '') {
-                itemQty = parseFloat(row[7]) || 0;
-                if (itemQty > 0) {
-                    lastItemQty = itemQty;
-                }
-            } else if (lastItemQty > 0) {
-                itemQty = lastItemQty;
-            }
-            
-            const definedQty = parseFloat(row[14]) || 0;
-            const totalUsageQty = parseFloat(row[15]) || 0;
-            const unitText = String(row[11] || '').trim();
-            
-            let usageQty = 0;
-            if (totalUsageQty > 0) {
-                usageQty = totalUsageQty;
-            } else if (itemQty > 0 && definedQty > 0) {
-                usageQty = itemQty * definedQty;
-            } else if (itemQty > 0 && definedQty === 0) {
-                usageQty = itemQty;
-            }
-            
-            if (rmName && usageQty > 0) {
-                const codeMatch = rmName.match(/([KAL]\d+)/);
-                if (codeMatch) {
-                    const code = codeMatch[0];
-                    let convertedQty = convertToSmallestUnit(usageQty, unitText, code);
+            // البحث عن صف العناوين
+            let headerRowIndex = -1;
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 16) {
+                    const hasItemQty = row[7] && row[7].toString().includes('Item Qty');
+                    const hasRmName = row[10] && (row[10].toString().includes('RMName') || row[10].toString().includes('RM Name'));
+                    const hasDefinedQty = row[14] && row[14].toString().includes('Defined Qty');
+                    const hasTotalUsage = row[15] && row[15].toString().includes('Total Usage Qty');
                     
-                    // معالجة خاصة للصنف K1070
+                    if (hasItemQty || hasRmName || hasDefinedQty || hasTotalUsage) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                for (let i = 0; i < data.length; i++) {
+                    const row = data[i];
+                    if (row && row.length >= 3 && row[2] && row[2].toString().includes('Order No')) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (headerRowIndex === -1) {
+                console.log("لم يتم العثور على عناوين في المبيعات");
+                return;
+            }
+            
+            // تجميع المبيعات حسب الصنف
+            const salesMap = {};
+            
+            let lastItemQty = 0;
+            let itemCount = 0;
+            
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 16) {
+                    const rmName = String(row[10] || '').trim();
+                    
+                    let itemQty = 0;
+                    if (row[7] !== undefined && row[7] !== null && row[7] !== '') {
+                        itemQty = parseFloat(row[7]) || 0;
+                        if (itemQty > 0) {
+                            lastItemQty = itemQty;
+                        }
+                    } else if (lastItemQty > 0) {
+                        itemQty = lastItemQty;
+                    }
+                    
+                    const definedQty = parseFloat(row[14]) || 0;
+                    const totalUsageQty = parseFloat(row[15]) || 0;
+                    const unitText = String(row[11] || '').trim();
+                    
+                    let usageQty = 0;
+                    if (totalUsageQty > 0) {
+                        usageQty = totalUsageQty;
+                    } else if (itemQty > 0 && definedQty > 0) {
+                        usageQty = itemQty * definedQty;
+                    } else if (itemQty > 0 && definedQty === 0) {
+                        usageQty = itemQty;
+                    }
+                    
+                    if (rmName && usageQty > 0) {
+                        const codeMatch = rmName.match(/([KAL]\d+)/);
+                        if (codeMatch) {
+                            const code = codeMatch[0];
+                            let convertedQty = convertToSmallestUnit(usageQty, unitText, code);
+                            
+                            // معالجة خاصة للصنف K1070
+                            if (code === 'K1070') {
+                                // إذا كانت القيمة بالجرام، نقسمها على 1000 لتحويلها إلى كيلو
+                                const unit = unitText.toLowerCase();
+                                if (unit.includes('جرام') || unit.includes('gram') || unit.includes('gm')) {
+                                    convertedQty = convertedQty / 1000;
+                                }
+                                // إذا كانت القيمة بالقطع ونحتاج تحويلها من قطع إلى كيلو
+                                // افتراض: كل قطعة = 0.18 كيلو تقريباً
+                                else if (unit.includes('قطعة') || unit.includes('piece') || unit.includes('pc') || unit.includes('pcs')) {
+                                    convertedQty = (convertedQty * 0.18) / 1000; // تحويل إلى كيلو
+                                }
+                                // إذا كانت القيمة بالباكيت
+                                else if (unit.includes('باكيت') || unit.includes('packet')) {
+                                    // تحويل الباكيت إلى قطع ثم إلى كيلو
+                                    const packetSize = 12; // افتراض: باكيت فيه 12 قطعة
+                                    convertedQty = (convertedQty * packetSize * 0.18) / 1000; // تحويل إلى كيلو
+                                }
+                                // إذا كانت القيمة بالكرتون
+                                else if (unit.includes('كرتون') || unit.includes('carton')) {
+                                    // تحويل الكرتون إلى قطع ثم إلى كيلو
+                                    const cartonSize = 40; // افتراض: كرتون فيه 40 قطعة
+                                    convertedQty = (convertedQty * cartonSize * 0.18) / 1000; // تحويل إلى كيلو
+                                }
+                            }
+                            
+                            salesMap[code] = (salesMap[code] || 0) + convertedQty;
+                            itemCount++;
+                            console.log(`مبيعات: ${code} = ${usageQty} ${unitText} -> ${convertedQty}`);
+                        } else {
+                            const item = parsedData.find(item => 
+                                item.name && rmName &&
+                                (item.name.toLowerCase().includes(rmName.toLowerCase()) ||
+                                 rmName.toLowerCase().includes(item.name.toLowerCase()))
+                            );
+                            if (item) {
+                                let convertedQty = convertToSmallestUnit(usageQty, unitText, item.code);
+                                
+                                // معالجة خاصة للصنف K1070
+                                if (item.code === 'K1070') {
+                                    // إذا كانت القيمة بالجرام، نقسمها على 1000 لتحويلها إلى كيلو
+                                    const unit = unitText.toLowerCase();
+                                    if (unit.includes('جرام') || unit.includes('gram') || unit.includes('gm')) {
+                                        convertedQty = convertedQty / 1000;
+                                    }
+                                    // إذا كانت القيمة بالقطع ونحتاج تحويلها من قطع إلى كيلو
+                                    else if (unit.includes('قطعة') || unit.includes('piece') || unit.includes('pc') || unit.includes('pcs')) {
+                                        convertedQty = (convertedQty * 0.18) / 1000; // تحويل إلى كيلو
+                                    }
+                                    // إذا كانت القيمة بالباكيت
+                                    else if (unit.includes('باكيت') || unit.includes('packet')) {
+                                        const packetSize = 12; // افتراض: باكيت فيه 12 قطعة
+                                        convertedQty = (convertedQty * packetSize * 0.18) / 1000; // تحويل إلى كيلو
+                                    }
+                                    // إذا كانت القيمة بالكرتون
+                                    else if (unit.includes('كرتون') || unit.includes('carton')) {
+                                        const cartonSize = 40; // افتراض: كرتون فيه 40 قطعة
+                                        convertedQty = (convertedQty * cartonSize * 0.18) / 1000; // تحويل إلى كيلو
+                                    }
+                                }
+                                
+                                salesMap[item.code] = (salesMap[item.code] || 0) + convertedQty;
+                                itemCount++;
+                                console.log(`مبيعات بالاسم: ${item.code} (${item.name}) = ${usageQty} ${unitText} -> ${convertedQty}`);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Object.keys(salesMap).forEach(code => {
+                const item = parsedData.find(item => item.code === code);
+                if (item) {
+                    item.sales = salesMap[code];
+                    // للتأكد من أن K1070 بالكيلو
                     if (code === 'K1070') {
-                        // إذا كانت القيمة بالجرام، نقسمها على 1000 لتحويلها إلى كيلو
-                        const unit = unitText.toLowerCase();
-                        if (unit.includes('جرام') || unit.includes('gram') || unit.includes('gm')) {
-                            convertedQty = convertedQty / 1000;
-                        }
-                        // إذا كانت القيمة بالقطع ونحتاج تحويلها من قطع إلى كيلو
-                        // افتراض: كل قطعة = 0.18 كيلو تقريباً
-                        else if (unit.includes('قطعة') || unit.includes('piece') || unit.includes('pc') || unit.includes('pcs')) {
-                            convertedQty = (convertedQty * 0.18) / 1000; // تحويل إلى كيلو
-                        }
-                        // إذا كانت القيمة بالباكيت
-                        else if (unit.includes('باكيت') || unit.includes('packet')) {
-                            // تحويل الباكيت إلى قطع ثم إلى كيلو
-                            const packetSize = 12; // افتراض: باكيت فيه 12 قطعة
-                            convertedQty = (convertedQty * packetSize * 0.18) / 1000; // تحويل إلى كيلو
-                        }
-                        // إذا كانت القيمة بالكرتون
-                        else if (unit.includes('كرتون') || unit.includes('carton')) {
-                            // تحويل الكرتون إلى قطع ثم إلى كيلو
-                            const cartonSize = 40; // افتراض: كرتون فيه 40 قطعة
-                            convertedQty = (convertedQty * cartonSize * 0.18) / 1000; // تحويل إلى كيلو
-                        }
-                    }
-                    
-                    salesMap[code] = (salesMap[code] || 0) + convertedQty;
-                    itemCount++;
-                    console.log(`مبيعات: ${code} = ${usageQty} ${unitText} -> ${convertedQty}`);
-                } else {
-                    const item = parsedData.find(item => 
-                        item.name && rmName &&
-                        (item.name.toLowerCase().includes(rmName.toLowerCase()) ||
-                         rmName.toLowerCase().includes(item.name.toLowerCase()))
-                    );
-                    if (item) {
-                        let convertedQty = convertToSmallestUnit(usageQty, unitText, item.code);
-                        
-                        // معالجة خاصة للصنف K1070
-                        if (item.code === 'K1070') {
-                            // إذا كانت القيمة بالجرام، نقسمها على 1000 لتحويلها إلى كيلو
-                            const unit = unitText.toLowerCase();
-                            if (unit.includes('جرام') || unit.includes('gram') || unit.includes('gm')) {
-                                convertedQty = convertedQty / 1000;
-                            }
-                            // إذا كانت القيمة بالقطع ونحتاج تحويلها من قطع إلى كيلو
-                            else if (unit.includes('قطعة') || unit.includes('piece') || unit.includes('pc') || unit.includes('pcs')) {
-                                convertedQty = (convertedQty * 0.18) / 1000; // تحويل إلى كيلو
-                            }
-                            // إذا كانت القيمة بالباكيت
-                            else if (unit.includes('باكيت') || unit.includes('packet')) {
-                                const packetSize = 12; // افتراض: باكيت فيه 12 قطعة
-                                convertedQty = (convertedQty * packetSize * 0.18) / 1000; // تحويل إلى كيلو
-                            }
-                            // إذا كانت القيمة بالكرتون
-                            else if (unit.includes('كرتون') || unit.includes('carton')) {
-                                const cartonSize = 40; // افتراض: كرتون فيه 40 قطعة
-                                convertedQty = (convertedQty * cartonSize * 0.18) / 1000; // تحويل إلى كيلو
-                            }
-                        }
-                        
-                        salesMap[item.code] = (salesMap[item.code] || 0) + convertedQty;
-                        itemCount++;
-                        console.log(`مبيعات بالاسم: ${item.code} (${item.name}) = ${usageQty} ${unitText} -> ${convertedQty}`);
+                        console.log(`المبيعات النهائية لـ K1070: ${item.sales} كيلو`);
                     }
                 }
-            }
+            });
+            
+            console.log(`تم تحليل ${itemCount} صنف للمبيعات`);
         }
-    }
-    
-    Object.keys(salesMap).forEach(code => {
-        const item = parsedData.find(item => item.code === code);
-        if (item) {
-            item.sales = salesMap[code];
-            // للتأكد من أن K1070 بالكيلو
-            if (code === 'K1070') {
-                console.log(`المبيعات النهائية لـ K1070: ${item.sales} كيلو`);
-            }
-        }
-    });
-    
-    console.log(`تم تحليل ${itemCount} صنف للمبيعات`);
-}
+        
         // تحليل شيت الجرد الفعلي للأصناف الأساسية ************************************************************
         function parseActualInventoryForBaseItems(data, parsedData) {
             console.log("تحليل الجرد الفعلي");
@@ -2040,7 +2127,7 @@ function parseSalesForBaseItems(data, parsedData) {
                     if (validExtensions.includes(fileExtension)) {
                         handleExcelFile(file);
                     } else {
-                        alert('يرجى اختيار ملف Excel صالح (امتداد .xlsx أو .xls أو .xlsm)');
+                        alert('يرجى اختيار ملف Excel صالح (امتداد .xlsx أو .xls أو .xlsم)');
                     }
                 }
             });
